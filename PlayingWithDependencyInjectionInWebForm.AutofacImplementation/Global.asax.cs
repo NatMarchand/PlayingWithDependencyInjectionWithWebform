@@ -4,10 +4,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Web;
 using Autofac;
 using Autofac.Builder;
 using Autofac.Core;
+using Autofac.Core.Lifetime;
 
 namespace PlayingWithDependencyInjectionInWebForm.AutofacImplementation
 {
@@ -16,7 +18,7 @@ namespace PlayingWithDependencyInjectionInWebForm.AutofacImplementation
         protected void Application_Start(object sender, EventArgs e)
         {
             var builder = new ContainerBuilder();
-            builder.RegisterType<Dependency>().As<IDependency>();
+            builder.RegisterType<Dependency>().As<IDependency>().InstancePerRequest();
             builder.RegisterSource(new WebFormRegistrationSource());
             var container = builder.Build();
             var provider = new AutofacServiceProvider(container);
@@ -35,10 +37,26 @@ namespace PlayingWithDependencyInjectionInWebForm.AutofacImplementation
 
         public object GetService(Type serviceType)
         {
-            if (_container.IsRegistered(serviceType))
+            ILifetimeScope lifetimeScope;
+            if (HttpContext.Current != null)
+            {
+
+                lifetimeScope = (ILifetimeScope)HttpContext.Current.Items[typeof(ILifetimeScope)];
+                if (lifetimeScope == null)
+                {
+                    lifetimeScope = _container.BeginLifetimeScope(MatchingScopeLifetimeTags.RequestLifetimeScopeTag);
+                    HttpContext.Current.Items.Add(typeof(ILifetimeScope), lifetimeScope);
+                }
+            }
+            else
+            {
+                lifetimeScope = _container;
+            }
+
+            if (lifetimeScope.IsRegistered(serviceType))
             {
                 Debug.WriteLine($"Resolving type {serviceType.FullName}");
-                return _container.Resolve(serviceType);
+                return lifetimeScope.Resolve(serviceType);
             }
 
             Debug.WriteLine($"Activating type {serviceType.FullName}");
@@ -66,11 +84,22 @@ namespace PlayingWithDependencyInjectionInWebForm.AutofacImplementation
 
     public interface IDependency
     {
+        int Id { get; }
         string GetFormattedTime();
     }
 
+    [DebuggerDisplay("Dependency #{" + nameof(Id) + "}")]
     public class Dependency : IDependency
     {
+        private static int _id;
+
+        public int Id { get; }
+
+        public Dependency()
+        {
+            Id = Interlocked.Increment(ref _id);
+        }
+
         public string GetFormattedTime() => DateTimeOffset.UtcNow.ToString("f", CultureInfo.InvariantCulture);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Web.UI;
 
 namespace PlayingWithDependencyInjectionInWebForm.AutofacImplementation
@@ -10,6 +11,7 @@ namespace PlayingWithDependencyInjectionInWebForm.AutofacImplementation
         public Main(IDependency dependency)
         {
             Dependency = dependency;
+            Debug.WriteLine($"Dependency {dependency.Id}");
         }
     }
 }
