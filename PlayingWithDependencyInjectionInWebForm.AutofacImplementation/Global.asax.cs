@@ -22,7 +22,7 @@ namespace PlayingWithDependencyInjectionInWebForm.AutofacImplementation
             builder.RegisterSource(new WebFormRegistrationSource());
             var container = builder.Build();
             var provider = new AutofacServiceProvider(container);
-            typeof(HttpRuntime).GetProperty("WebObjectActivator")?.SetValue(null, provider);
+            HttpRuntime.WebObjectActivator = provider;
         }
     }
 

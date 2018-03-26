@@ -13,7 +13,7 @@ namespace PlayingWithDependencyInjectionInWebForm.MicrosoftDependencyInjection
             var collection = new ServiceCollection();
             collection.AddTransient<IDependency, Dependency>(sp => new Dependency("foo"));
             var provider = new MicrosoftDependencyInjectionServiceProvider(collection.BuildServiceProvider());
-            typeof(HttpRuntime).GetProperty("WebObjectActivator")?.SetValue(null, provider);
+            HttpRuntime.WebObjectActivator = provider;
         }
     }
 
@@ -32,7 +32,7 @@ namespace PlayingWithDependencyInjectionInWebForm.MicrosoftDependencyInjection
             {
                 return ActivatorUtilities.GetServiceOrCreateInstance(_serviceProvider, serviceType);
             }
-            catch(InvalidOperationException)
+            catch (InvalidOperationException)
             {
                 //No public ctor available, revert to a private/internal one
                 return Activator.CreateInstance(serviceType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance, null, null, null);
