@@ -44,8 +44,18 @@ namespace PlayingWithDependencyInjectionInWebForm.AutofacImplementation
                 lifetimeScope = (ILifetimeScope)HttpContext.Current.Items[typeof(ILifetimeScope)];
                 if (lifetimeScope == null)
                 {
+                    void CleanScope(object sender, EventArgs args)
+                    {
+                        if (sender is HttpApplication application)
+                        {
+                            application.RequestCompleted -= CleanScope;
+                            lifetimeScope.Dispose();
+                        }
+                    }
+
                     lifetimeScope = _container.BeginLifetimeScope(MatchingScopeLifetimeTags.RequestLifetimeScopeTag);
                     HttpContext.Current.Items.Add(typeof(ILifetimeScope), lifetimeScope);
+                    HttpContext.Current.ApplicationInstance.RequestCompleted += CleanScope;
                 }
             }
             else
